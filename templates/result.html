@@ -16,7 +16,7 @@
         <div class="inputArea">
         	<input type="text" class="searchInput" value="{{ key_word }}"/>
         	<img class="home-search-icon" src="{{ url_for('static',filename="img/search.fdbb782e.svg") }}" alt="search" onclick="add_search() "/>
-            <!--<input type="button" class="searchButton" onclick="add_search()"/>-->
+
         </div>
     </div>
     <div class="nav">
@@ -25,12 +25,9 @@
                 {% if type == option[0] %}
                 <li class="searchItem current" data-type="{{ option[0] }}">{{ option[1] }}</li>
                 {% else %}
-                <li class="searchItem" data-type="{{ option[0] }}">{{ option[1] }}</li>
+                    <li class="searchItem" data-type="{{ option[0] }}"><a href="{{ url_for('search',q=key_words,s_type=option[0]) }}">{{ option[1] }}</a></li>
                 {% endif %}
             {% endfor %}
-{#            <li class="searchItem" data-type="all">全部</li>#}
-{#            <li class="searchItem current" data-type="A4hou">嘶吼</li>#}
-{#            <li class="searchItem" data-type="anquanke">安全客</li>#}
         </ul>
     </div>
 	<div id="bd" class="ue-clear">
@@ -238,7 +235,7 @@
             MapSearchArr();
         }
 
-        window.location.href=search_url+'?q='+val+"&s_type="+"{{ type }}"
+        window.location.href=search_url+'?q='+val+"&s_type="+{{ type }}
 
     }
 

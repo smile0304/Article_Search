@@ -1,7 +1,7 @@
 from flask import Flask,render_template,request
 from config import client
 from moudels import Article_4houType,Article_anquankeType
-from common import elasticsearch_fuzz_search,elasticsearch_fuzz_allsearch
+from common import elasticsearch_search,elasticsearch_allsearch
 import json
 from datetime import datetime
 app = Flask(__name__)
@@ -16,13 +16,13 @@ def suggest():
     key_words = request.args.get('s','')
     type = request.args.get('s_type','')
     if "A4hou" == type:
-        fuzzing = elasticsearch_fuzz_search(type=Article_4houType)
+        fuzzing = elasticsearch_search(type=Article_4houType)
         re_dates = fuzzing.return_fuzzing_search(key_words=key_words)
     elif "anquanke" == type:
-        fuzzing = elasticsearch_fuzz_search(type=Article_anquankeType)
+        fuzzing = elasticsearch_search(type=Article_anquankeType)
         re_dates = fuzzing.return_fuzzing_search(key_words=key_words)
     else:
-        fuzzing = elasticsearch_fuzz_allsearch()
+        fuzzing = elasticsearch_allsearch()
         re_dates = fuzzing.return_fuzzing_search(key_words=key_words)
     return json.dumps(re_dates)
 
@@ -37,19 +37,29 @@ def search():
         page = int(page)
     except:
         page = 1
+    if "A4hou" == types:
+        search_obj = elasticsearch_search(type=Article_4houType)
+    elif "anquanke" == types:
+        search_obj = elasticsearch_search(type=Article_anquankeType)
+    response, last_seconds = search_obj.get_date(key_words=key_words,page=page)
+    total_nums = response["hits"]["total"]
+    if (page%10) > 0:
+        page_nums = int(total_nums/10)+1
+    else:
+        page_nums = int(total_nums/10)
+    all_hits = search_obj.analyze_date(key_words=key_words)
 
 
-    # return render_template("result.html",
-    #                        page=page,
-    #                        all_hits=hit_list,
-    #                        key_words=key_words,
-    #                        total_nums=total_nums,
-    #                        page_nums=page_nums,
-    #                        last_seconds=last_seconds,
-    #                        key_word = key_words,
-    #                        type = types,
-    #                        all_options = all_options
-    #                        )
+    return render_template("result.html",
+                           page=page,
+                           all_hits=all_hits,
+                           key_words=key_words,
+                           total_nums=total_nums,
+                           page_nums=page_nums,
+                           last_seconds=last_seconds,
+                           type = types,
+                           all_options = all_options
+                           )
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0",debug=True,port=8080)
