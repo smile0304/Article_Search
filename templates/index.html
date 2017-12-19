@@ -1,0 +1,331 @@
+
+<!DOCTYPE html >
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=emulateIE7" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>TT-search 搜索引擎</title>
+<link href="{{ url_for('static',filename="css/style.css") }}" rel="stylesheet" type="text/css" />
+<link href="{{ url_for('static',filename="css/index.css") }}" rel="stylesheet" type="text/css" />
+<link rel='stylesheet' href='{{ url_for('static',filename="css/reset.css") }}'>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename="css/default.css") }}">
+	<script src='{{ url_for('static',filename="js/prefixfree.min.js") }}'></script>
+	<style type="text/css">
+		body {
+		  background: #000;
+		}
+
+		canvas {  
+		  display: block; 
+		}
+
+		#gui {
+		  left: 0;
+		  position: fixed;
+		  top: 0;
+		}
+		.sketch{
+			position: absolute;
+			top: 0;
+			z-index: 1;
+		}
+	</style>
+</head>
+<body style="color: #ffffff;font-family: cursive;">
+<div id="container">
+	<div class="htmleaf-container">
+	</div>
+	<div id="bd">
+        <div id="main">
+        	<h1 class="title" >
+            	<div class="logo large">
+            		TT-Search
+            	</div>
+            </h1>
+            <div class="nav ue-clear">
+            	<ul class="searchList">
+                    <li class="searchItem current" data-type="all">全部</li>
+                    <li class="searchItem" data-type="A4hou">嘶吼</li>
+                    <li class="searchItem" data-type="anquanke">安全客</li>
+                </ul>
+            </div>
+            <div class="inputArea">
+            	<input type="text" class="home-search-input" />
+            	<img class="home-search-icon" src="{{ url_for('static',filename="img/search.fdbb782e.svg") }}" alt="search" onclick="add_search()">
+           		 <ul class="dataList">
+
+                </ul>
+            </div>
+        </div><!-- End of main -->
+    </div><!--End of bd-->
+
+    <div class="foot">
+    	<div class="wrap">
+            <div class="copyright" style="">Copyright &copy;ms08067.com 版权所有  E-mail:tt.jiaqi@gmail.com</div>
+        </div>
+    </div>
+</div>
+</body>
+<script type="text/javascript" src="{{ url_for('static',filename="js/jquery.js") }}"></script>
+<script type="text/javascript" src="{{ url_for('static',filename="js/global.js") }}"></script>
+
+	<script src='{{ url_for('static',filename="js/stopExecutionOnTimeout.js") }}'></script>
+	<script src='{{ url_for('static',filename="js/jquery-min.js") }}'></script>
+	<script src='{{ url_for('static',filename="js/dat.gui.min.js") }}'></script>
+	<script src='{{ url_for('static',filename="js/sketch.min.js") }}'></script>
+	<script>
+	var sketch = Sketch.create(), center = {
+	        x: sketch.width / 2,
+	        y: sketch.height / 2
+	    }, orbs = [], dt = 1, opt = {
+	        count: 100,
+	        spacing: 2,
+	        speed: 65,
+	        scale: 1,
+	        jitterRadius: 0,
+	        jitterHue: 0,
+	        clearAlpha: 10,
+	        toggleOrbitals: true,
+	        orbitalAlpha: 100,
+	        toggleLight: true,
+	        lightAlpha:0,
+	        clear: function () {
+	            sketch.clearRect(0, 0, sketch.width, sketch.height), orbs.length = 0;
+	        }
+	    };
+	var Orb = function (x, y) {
+	    var dx = x / opt.scale - center.x / opt.scale, dy = y / opt.scale - center.y / opt.scale;
+	    this.angle = atan2(dy, dx);
+	    this.lastAngle = this.angle;
+	    this.radius = sqrt(dx * dx + dy * dy);
+	    this.size = this.radius / 300 + 1;
+	    this.speed = random(1, 10) / 300000 * this.radius + 0.015;
+	};
+	Orb.prototype.update = function () {
+	    this.lastAngle = this.angle;
+	    this.angle += this.speed * (opt.speed / 50) * dt;
+	    this.x = this.radius * cos(this.angle);
+	    this.y = this.radius * sin(this.angle);
+	};
+	Orb.prototype.render = function () {
+	    if (opt.toggleOrbitals) {
+	        var radius = opt.jitterRadius === 0 ? this.radius : this.radius + random(-opt.jitterRadius, opt.jitterRadius);
+	        radius = opt.jitterRadius != 0 && radius < 0 ? 0.001 : radius;
+	        sketch.strokeStyle = 'hsla( ' + ((this.angle + 90) / (PI / 180) + random(-opt.jitterHue, opt.jitterHue)) + ', 100%, 50%, ' + opt.orbitalAlpha / 100 + ' )';
+	        sketch.lineWidth = this.size;
+	        sketch.beginPath();
+	        if (opt.speed >= 0) {
+	            sketch.arc(0, 0, radius, this.lastAngle, this.angle + 0.001, false);
+	        } else {
+	            sketch.arc(0, 0, radius, this.angle, this.lastAngle + 0.001, false);
+	        }
+	        ;
+	        sketch.stroke();
+//	        sketch.closePath();
+	    }
+	    ;
+	    if (opt.toggleLight) {
+	        sketch.lineWidth = 0.5;
+	        sketch.strokeStyle = 'hsla( ' + ((this.angle + 90) / (PI / 180) + random(-opt.jitterHue, opt.jitterHue)) + ', 100%, 70%, ' + opt.lightAlpha / 100 + ' )';
+	        sketch.beginPath();
+	        sketch.moveTo(0, 0);
+	        sketch.lineTo(this.x, this.y);
+	        sketch.stroke();
+	    }
+	    ;
+	};
+	var createOrb = function (config) {
+	    var x = config && config.x ? config.x : sketch.mouse.x, y = config && config.y ? config.y : sketch.mouse.y;
+	    orbs.push(new Orb(x, y));
+	};
+	var turnOnMove = function () {
+	    sketch.mousemove = createOrb;
+	};
+	var turnOffMove = function () {
+	    sketch.mousemove = null;
+	};
+	sketch.mousedown = function () {
+	    createOrb();
+	    turnOnMove();
+	};
+	sketch.mouseup = turnOffMove;
+	sketch.resize = function () {
+	    center.x = sketch.width / 2;
+	    center.y = sketch.height / 2;
+	    sketch.lineCap = 'round';
+	};
+	sketch.setup = function () {
+	    while (opt.count--) {
+	        if (window.CP.shouldStopExecution(1)) {
+	            break;
+	        }
+	        createOrb({
+	            x: random(sketch.width / 2 - 300, sketch.width / 2 + 300),
+	            y: random(sketch.height / 2 - 300, sketch.height / 2 + 300)
+	        });
+	    }
+	    ;
+	    window.CP.exitedLoop(1);
+	};
+	sketch.clear = function () {
+	    sketch.globalCompositeOperation = 'destination-out';
+	    sketch.fillStyle = 'rgba( 0, 0, 0 , ' + opt.clearAlpha / 100 + ' )';
+	    sketch.fillRect(0, 0, sketch.width, sketch.height);
+	    sketch.globalCompositeOperation = 'lighter';
+	};
+	sketch.update = function () {
+	    dt = sketch.dt < 0.1 ? 0.1 : sketch.dt / 16;
+	    dt = dt > 5 ? 5 : dt;
+	    var i = orbs.length;
+//	    opt.total = i;
+	    while (i--) {
+	        if (window.CP.shouldStopExecution(2)) {
+	            break;
+	        }
+	        orbs[i].update();
+	    }
+	    window.CP.exitedLoop(2);
+	};
+	sketch.draw = function () {
+	    sketch.save();
+	    sketch.translate(center.x, center.y);
+	    sketch.scale(opt.scale, opt.scale);
+	    var i = orbs.length;
+	    while (i--) {
+	        if (window.CP.shouldStopExecution(3)) {
+	            break;
+	        }
+	        orbs[i].render();
+	    }
+	    window.CP.exitedLoop(3);
+	    sketch.restore();
+	};
+	gui = new dat.GUI({ autoPlace: false });
+	customContainer = document.getElementById('gui');
+//	customContainer.appendChild(gui.domElement);
+	document.onselectstart = function () {
+	    return false;
+	};
+	</script>
+<script type="text/javascript">
+    var suggest_url = "{{ url_for("suggest") }}"
+    var search_url = "{{ url_for("search") }}"
+
+
+	$('.searchList').on('click', '.searchItem', function(){
+		$('.searchList .searchItem').removeClass('current');
+		$(this).addClass('current');
+		Ajax_Get_Search_Data();
+	});
+
+    function removeByValue(arr, val) {
+      for(var i=0; i<arr.length; i++) {
+        if(arr[i] == val) {
+          arr.splice(i, 1);
+          break;
+        }
+      }
+    }
+
+
+    // 搜索建议
+    $(function(){
+        $('.home-search-input').bind(' input propertychange ',function(){
+            Ajax_Get_Search_Data();
+        } );
+    })
+
+    function Ajax_Get_Search_Data()
+    {
+        var searchText = $('.home-search-input').val();
+		if(searchText.length > 0) {
+            var tmpHtml = ""
+            $.ajax({
+                cache: false,
+                type: 'get',
+                dataType: 'json',
+                url: suggest_url + "?s=" + searchText + "&s_type=" + $(".searchItem.current").attr('data-type'),
+                async: true,
+                success: function (data) {
+                    for (var i = 0; i < data.length; i++) {
+                        tmpHtml += '<li><a href="' + search_url + '?q=' + data[i] + '&s_type='+$(".searchItem.current").attr('data-type')+'">' + data[i] + '</a></li>'
+                    }
+                    $(".dataList").html("")
+                    $(".dataList").append(tmpHtml);
+                    if (data.length == 0) {
+                        $('.dataList').hide()
+                    } else {
+                        $('.dataList').show()
+                    }
+                }
+            });
+        }
+        else
+        {
+            $(".dataList").html("");
+        }
+    }
+//  hideElement($('.dataList'), $('.home-search-input'));
+
+</script>
+<script>
+    var searchArr;
+    //定义一个search的，判断浏览器有无数据存储（搜索历史）
+    if(localStorage.search){
+    //如果有，转换成 数组的形式存放到searchArr的数组里（localStorage以字符串的形式存储，所以要把它转换成数组的形式）
+        searchArr= localStorage.search.split(",")
+    }else{
+    //如果没有，则定义searchArr为一个空的数组
+        searchArr = [];
+    }
+    //把存储的数据显示出来作为搜索历史
+    MapSearchArr();
+
+    function add_search(){
+        var val = $(".home-search-input").val();
+        if (val.length>=2){
+            //点击搜索按钮时，去重
+            KillRepeat(val);
+            //去重后把数组存储到浏览器localStorage
+            localStorage.search = searchArr;
+            //然后再把搜索内容显示出来
+            MapSearchArr();
+        }
+
+        window.location.href=search_url+'?q='+val+"&s_type="+$(".searchItem.current").attr('data-type')
+
+    }
+
+    function MapSearchArr(){
+        var tmpHtml = "";
+        var arrLen = 0
+        if (searchArr.length >= 5){
+            arrLen = 5
+        }else {
+            arrLen = searchArr.length
+        }
+        for (var i=0;i<arrLen;i++){
+            tmpHtml += '<a href="'+search_url+'?q='+searchArr[i]+'">'+searchArr[i]+'</a>'
+        }
+        $(".mysearch .all-search").html(tmpHtml);
+    }
+    //去重
+    function KillRepeat(val){
+        var kill = 0;
+        for (var i=0;i<searchArr.length;i++){
+            if(val===searchArr[i]){
+                kill ++;
+            }
+        }
+        if(kill<1){
+            searchArr.unshift(val);
+        }else {
+            removeByValue(searchArr, val)
+            searchArr.unshift(val)
+        }
+    }
+
+
+</script>
+</html>
