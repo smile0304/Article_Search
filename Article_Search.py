@@ -41,6 +41,9 @@ def search():
         search_obj = elasticsearch_search(type=Article_4houType)
     elif "anquanke" == types:
         search_obj = elasticsearch_search(type=Article_anquankeType)
+    elif "all" == types:
+        #TODO 从数据elasticsearch中检索全部数据,重点是怎么呈现出来
+        pass
     response, last_seconds = search_obj.get_date(key_words=key_words,page=page)
     total_nums = response["hits"]["total"]
     if (page%10) > 0:
