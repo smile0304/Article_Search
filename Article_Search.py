@@ -1,7 +1,7 @@
 from flask import Flask,render_template,request
 from config import client
 from moudels import Article_4houType,Article_anquankeType
-from common import elasticsearch_search,elasticsearch_allsearch
+from common import elasticsearch_search,elasticsearch_allsearch,get_elasticsearch_data_count
 import json
 from datetime import datetime
 app = Flask(__name__)
@@ -39,21 +39,29 @@ def search():
         page = 1
     if "A4hou" == types:
         search_obj = elasticsearch_search(type=Article_4houType)
+        response, last_seconds = search_obj.get_date(key_words=key_words, page=page)
+        total_nums = response["hits"]["total"]
+        all_hits = search_obj.analyze_date(key_words, response)
     elif "anquanke" == types:
         search_obj = elasticsearch_search(type=Article_anquankeType)
+        response, last_seconds = search_obj.get_date(key_words=key_words, page=page)
+        total_nums = response["hits"]["total"]
+        all_hits = search_obj.analyze_date(key_words, response)
     elif "all" == types:
-        #TODO 从数据elasticsearch中检索全部数据,重点是怎么呈现出来
-        pass
-    response, last_seconds = search_obj.get_date(key_words=key_words,page=page)
-    total_nums = response["hits"]["total"]
+
+        search_obj = elasticsearch_allsearch()
+        all_hits,last_seconds,total_nums = search_obj.return_datenum(key_words,page)
+    x = get_elasticsearch_data_count()
+    alldate_nums = x.return_count()
     if (page%10) > 0:
         page_nums = int(total_nums/10)+1
     else:
         page_nums = int(total_nums/10)
-    all_hits = search_obj.analyze_date(key_words=key_words)
+
 
 
     return render_template("result.html",
+                           alldate_nums = alldate_nums,
                            page=page,
                            all_hits=all_hits,
                            key_words=key_words,

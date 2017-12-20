@@ -287,3 +287,34 @@ class elasticsearch_allsearch(elasticsearch_search):
         last_seconds = (end_time - start_time).total_seconds()
         return response,last_seconds
 
+class get_elasticsearch_data_count(object):
+
+    def __init__(self):
+        self.index = []
+        self.counts = []
+        self.index.append("article_anquanke")
+        self.index.append("teachnical_4hou")
+
+        for index in self.index:
+            count = self.__get_datecount(index)
+            self.counts.append(count)
+
+        self.counts.append(self.counts[0]+self.counts[1])
+
+
+    def __get_datecount(self,index):
+        """
+        获取数据总数
+        :param index:
+        :return:response["count"]当前索引数据总数
+        """
+        response = client.count(index)
+        return response["count"]
+
+    def return_count(self):
+        """
+        用来返回数据
+        :return: self.counts 返回数据列表
+        """
+        return self.counts
+
