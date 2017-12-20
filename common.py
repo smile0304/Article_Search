@@ -63,17 +63,16 @@ class elasticsearch_search(object):
             }
         )
         end_time = datetime.now()
-        self.response = response
         last_seconds = (end_time - start_time).total_seconds()
         return response,last_seconds
 
-    def analyze_date(self,key_words,response=""):
+    def analyze_date(self,key_words,response):
         """
         返回分析后的数据列表集合
         :return:hit_list
         """
         hit_list = []
-        for hit in self.response["hits"]["hits"]:
+        for hit in response["hits"]["hits"]:
             hit_dict = {}
             hit_dict["origin"] = self.get_origin(hit)
             if "highlight" in hit:
@@ -171,6 +170,7 @@ class elasticsearch_allsearch(elasticsearch_search):
     def __init__(self):
         self.s_a4hou = Article_4houType.search()
         self.s_anquanke = Article_anquankeType.search()
+        self.all_hits = []
 
     def return_fuzzing_search(self,key_words):
         re_dates = []
@@ -203,4 +203,87 @@ class elasticsearch_allsearch(elasticsearch_search):
 
         return re_dates
 
+
+
+    def return_datenum(self,key_words,page=1):
+        #获取数据条数
+        self.index = "teachnical_4hou"
+        response_4hou ,times = self.get_date(key_words,init=0,size=1)
+        self.index = "article_anquanke"
+        response_anquanke,times = self.get_date(key_words,init=0,size=1)
+        total_nums_4hou = response_4hou["hits"]["total"]
+        total_nums_anquanke = response_anquanke["hits"]["total"]
+        zipmin= min(total_nums_4hou,total_nums_anquanke)
+        #获取数据个数处理
+        response_and_time_list = self.get_zipdate(zipmin,total_nums_4hou,total_nums_anquanke,key_words,page,size=5)
+        #对获取到的数据进行处理
+        for response in response_and_time_list[:-1]:
+            datalist = super().analyze_date(key_words,response)
+            self.all_hits = self.all_hits + datalist
+        last_seconds = response_and_time_list[-1]
+        return self.all_hits,last_seconds,total_nums_4hou+total_nums_anquanke
+    def get_zipdate(self,zipmin,nums_4hou,nums_anquanke,key_words,page,size):
+        """
+        :return:
+        """
+        init = (page - 1) * 5
+        if init <= zipmin:
+            self.index = "teachnical_4hou"
+            response_4hou,time_4hou = self.get_date(key_words, init, size)
+            self.index = "article_anquanke"
+            response_anquanke,time_anquanke = self.get_date(key_words, init, size)
+        else :
+            if init >= nums_4hou:
+                self.index = "article_anquanke"
+                #init要变
+                init = int(init/2) + (page - 1) * 5
+                size = 10
+                response_anquanke,time_anquanke = self.get_date(key_words,init,size)
+                return response_anquanke,time_anquanke
+            elif init >= nums_anquanke:
+                self.index = "article_anquanke"
+                init = int(init / 2) + (page - 1) * 5
+                size = 10
+                response_4hou,time_4hou = self.get_date(key_words,init,size)
+                return response_4hou,time_4hou
+        last_seconds = time_4hou + time_anquanke
+        return [response_anquanke,response_4hou,last_seconds]
+
+
+
+
+
+    def get_date(self,key_words,init,size):
+        """
+        从elasticsearch中获取数据
+        :param key_words:
+        :param page:
+        :return: response
+        :return : last_seconds
+        """
+        start_time = datetime.now()
+        response = client.search(
+            index = self.index,
+            body = {
+                "query":{
+                    "multi_match":{
+                        "query":key_words,
+                        "fields":["tags","title","content"]
+                    }
+                },
+                "from":init,
+                "size":size,
+                "highlight":{
+                    "pre_tags":['<span class="keyWord">'],
+                    "post_tags":['</span>'],
+                    "fields":{
+                        "title":{},
+                        "content":{},
+                    }
+                }
+            }
+        )
+        end_time = datetime.now()
+        last_seconds = (end_time - start_time).total_seconds()
+        return response,last_seconds
 
