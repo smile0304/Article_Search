@@ -97,8 +97,6 @@ class elasticsearch_search(object):
             replace_text = '<span class="keyWord">' + key_words + "</span>"
             words = "(?i)"+key_words
             hit_dict["content"] = re.sub(words,replace_text,hit_dict["content"])
-            print(hit_dict["content"])
-            print("="*100)
             hit_list.append(hit_dict)
         return hit_list
 
