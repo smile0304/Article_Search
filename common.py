@@ -81,9 +81,13 @@ class elasticsearch_search(object):
                 else:
                     hit_dict["title"] = hit["_source"]["title"]
                 if "content" in hit["highlight"]:
-                    hit_dict["content"] = self.filter_tags("".join(hit["highlight"]["content"])[:500])
+                    hit_dict["content"] = self.filter_tags("".join(hit["highlight"]["content"]))
+                    hit_dict["content"] =  hit_dict["content"][:500]+">"
+                    #hit_dict["content"] = hit_dict["content"][:500]
                 else:
-                    hit_dict["content"] = self.filter_tags(hit["_source"]["content"][:500])
+                    hit_dict["content"] = self.filter_tags(hit["_source"]["content"])
+                    hit_dict["content"] = hit_dict["content"][:500]+">"
+                    #hit_dict["content"] = hit_dict["content"][:500]
             else:
                 hit_dict["title"] = hit["_source"]["title"]
                 hit_dict["content"] = self.filter_tags(hit["_source"]["content"][:500])
@@ -93,7 +97,8 @@ class elasticsearch_search(object):
             replace_text = '<span class="keyWord">' + key_words + "</span>"
             words = "(?i)"+key_words
             hit_dict["content"] = re.sub(words,replace_text,hit_dict["content"])
-
+            print(hit_dict["content"])
+            print("="*100)
             hit_list.append(hit_dict)
         return hit_list
 
