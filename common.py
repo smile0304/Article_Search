@@ -381,7 +381,7 @@ class get_elasticsearch_data_count(object):
             count = self.__get_datecount(index)
             self.counts.append(count)
 
-        self.counts.append(self.counts[0]+self.counts[1])
+        self.counts.append(self.counts[0]+self.counts[1]+self.counts[2])
 
 
     def __get_datecount(self,index):
