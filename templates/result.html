@@ -49,6 +49,10 @@
                     	<span class="name">安全客</span>
 						<span class="unit">({{ alldate_nums[0] }})</span>
                     </li>
+                    <li>
+                    	<span class="name">freebuf</span>
+						<span class="unit">({{ alldate_nums[0] }})</span>
+                    </li>
                     <li class="more">
                     	<a href="javascript:;">
                         	<span class="text">更多</span>
@@ -173,7 +177,7 @@
 	//分页
 	$(".pagination").pagination({{ total_nums }}, {
 		current_page :{{ page - 1 }}, //当前页码
-		items_per_page :10,
+		items_per_page :12,
 		display_msg :true,
 		callback :pageselectCallback
 	});

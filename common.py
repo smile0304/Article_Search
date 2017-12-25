@@ -1,4 +1,4 @@
-from moudels import Article_4houType,Article_anquankeType
+from moudels import Article_4houType,Article_anquankeType,Article_freebuf
 from config import client
 from datetime import datetime
 import re
@@ -10,6 +10,8 @@ class elasticsearch_search(object):
             self.index = "article_anquanke"
         elif Article_4houType == type:
             self.index = "teachnical_4hou"
+        elif Article_freebuf == type:
+            self.index = "teachnical_freebuf"
 
     def return_fuzzing_search(self,key_words):
         """
@@ -50,8 +52,8 @@ class elasticsearch_search(object):
                         "fields":["tags","title","content"]
                     }
                 },
-                "from":(page-1)*10,
-                "size":10,
+                "from":(page-1)*12,
+                "size":12,
                 "highlight":{
                     "pre_tags":['<span class="keyWord">'],
                     "post_tags":['</span>'],
@@ -110,6 +112,8 @@ class elasticsearch_search(object):
                 origin = "嘶吼"
             elif "article_anquanke" == hit["_index"]:
                 origin = "安全客"
+            elif "teachnical_freebuf" == hit["_index"]:
+                origin = "Freebuf"
         else:
             origin = "未知来源"
         return origin
@@ -173,6 +177,7 @@ class elasticsearch_allsearch(elasticsearch_search):
     def __init__(self):
         self.s_a4hou = Article_4houType.search()
         self.s_anquanke = Article_anquankeType.search()
+        self.s_freebuf = Article_freebuf.search()
         self.all_hits = []
 
     def return_fuzzing_search(self,key_words):
@@ -183,7 +188,7 @@ class elasticsearch_allsearch(elasticsearch_search):
                 "fuzzy": {
                     "fuzziness": 2
                 },
-                "size": 5
+                "size": 4
             })
             suggestions_4hou = s_4hou.execute_suggest()
 
@@ -195,7 +200,7 @@ class elasticsearch_allsearch(elasticsearch_search):
                 "fuzzy": {
                     "fuzziness": 2
                 },
-                "size": 10-len(re_dates)
+                "size": 4
             })
 
             suggestions_anquanke = s_anquanke.execute_suggest()
@@ -203,6 +208,19 @@ class elasticsearch_allsearch(elasticsearch_search):
             for match_anquanke in suggestions_anquanke.my_suggest[0].options:
                 source_anquanke = match_anquanke._source
                 re_dates.append(source_anquanke["title"])
+
+            s_freebuf = self.s_freebuf.suggest("my_suggest",key_words,completion={
+                "field": "suggest",
+                "fuzzy": {
+                    "fuzziness": 2
+                },
+                "size": 12 - len(re_dates)
+            })
+            suggestions_freebuf = s_freebuf.execute_suggest()
+
+            for match_freebuf in suggestions_freebuf.my_suggest[0].options:
+                source_freebuf = match_freebuf._source
+                re_dates.append(source_freebuf["title"])
 
         return re_dates
 
@@ -214,28 +232,87 @@ class elasticsearch_allsearch(elasticsearch_search):
         response_4hou ,times = self.get_date(key_words,init=0,size=1)
         self.index = "article_anquanke"
         response_anquanke,times = self.get_date(key_words,init=0,size=1)
+        self.index = "teachnical_freebuf"
+        response_freebuf,times = self.get_date(key_words,init=0,size=1)
         total_nums_4hou = response_4hou["hits"]["total"]
         total_nums_anquanke = response_anquanke["hits"]["total"]
-        zipmin= min(total_nums_4hou,total_nums_anquanke)
+        total_nums_freebuf = response_freebuf["hits"]["total"]
+        zipmin= min(total_nums_4hou,total_nums_anquanke,total_nums_freebuf)
         #获取数据个数处理
-        response_and_time_list = self.get_zipdate(zipmin,total_nums_4hou,total_nums_anquanke,key_words,page,size=5)
+        response_and_time_list = self.get_zipdate(zipmin,total_nums_4hou,total_nums_anquanke,total_nums_freebuf,key_words,page,size=4)
         #对获取到的数据进行处理
         for response in response_and_time_list[:-1]:
             datalist = super().analyze_date(key_words,response)
             self.all_hits = self.all_hits + datalist
         last_seconds = response_and_time_list[-1]
-        return self.all_hits,last_seconds,total_nums_4hou+total_nums_anquanke
-    def get_zipdate(self,zipmin,nums_4hou,nums_anquanke,key_words,page,size):
+        return self.all_hits,last_seconds,total_nums_4hou+total_nums_anquanke+total_nums_freebuf
+
+    def get_zipdate(self,zipmin,nums_4hou,nums_anquanke,nums_freebuf,key_words,page,size):
         """
         :return:
         """
-        init = (page - 1) * 5
+        init = (page - 1) * size
         if init <= zipmin:
             self.index = "teachnical_4hou"
             response_4hou,time_4hou = self.get_date(key_words, init, size)
             self.index = "article_anquanke"
             response_anquanke,time_anquanke = self.get_date(key_words, init, size)
+            self.index = "teachnical_freebuf"
+            response_freebuf,time_freebuf = self.get_date(key_words, init, size)
         else :
+            if init >= nums_4hou and init>=nums_anquanke:
+                self.index = "teachnical_freebuf"
+                init = int(init/3) + (page - 1 ) * size
+                size = 12
+                response_freebuf,time_freebuf = self.get_date(key_words,init,size)
+                return response_freebuf,time_freebuf
+            elif init >= nums_anquanke and init>= nums_freebuf:
+                self.index = "teachnical_4hou"
+                init = int(init / 3) + (page - 1) * size
+                size = 12
+                response_4hou, time_4hou = self.get_date(key_words, init, size)
+                return response_4hou, time_4hou
+            elif init >= nums_4hou and init >= nums_freebuf:
+                self.index = "article_anquanke"
+                init = int(init / 3) + (page - 1) * size
+                size = 12
+                response_anquanke, time_anquanke = self.get_date(key_words, init, size)
+                return response_anquanke, time_anquanke
+            elif init >= nums_4hou:
+                self.index = "article_anquanke"
+                init = int(init / 3) + (page - 1) * size
+                size = 6
+                response_anquanke, time_anquanke = self.get_date(key_words, init, size)
+                self.index = "teachnical_freebuf"
+                init = int(init / 3) + (page - 1) * size
+                size = 12
+                response_freebuf, time_freebuf = self.get_date(key_words, init, size)
+                last_seconds = time_anquanke + time_freebuf
+                return [response_anquanke, response_freebuf, last_seconds]
+            elif init>=nums_freebuf:
+                self.index = "article_anquanke"
+                init = int(init / 3) + (page - 1) * size
+                size = 6
+                response_anquanke, time_anquanke = self.get_date(key_words, init, size)
+                self.index = "teachnical_4hou"
+                init = int(init / 3) + (page - 1) * size
+                size = 12
+                response_4hou, time_4hou = self.get_date(key_words, init, size)
+                last_seconds = time_4hou + time_anquanke
+                return [response_anquanke, response_4hou, last_seconds]
+            elif init>=nums_anquanke:
+                self.index = "teachnical_freebuf"
+                init = int(init / 3) + (page - 1) * size
+                size = 12
+                response_freebuf, time_freebuf = self.get_date(key_words, init, size)
+                self.index = "teachnical_4hou"
+                init = int(init / 3) + (page - 1) * size
+                size = 12
+                response_4hou, time_4hou = self.get_date(key_words, init, size)
+                last_seconds = time_4hou+ time_freebuf
+                return [response_4hou, response_freebuf, last_seconds]
+
+            """
             if init >= nums_4hou:
                 self.index = "article_anquanke"
                 #init要变
@@ -249,8 +326,9 @@ class elasticsearch_allsearch(elasticsearch_search):
                 size = 10
                 response_4hou,time_4hou = self.get_date(key_words,init,size)
                 return response_4hou,time_4hou
-        last_seconds = time_4hou + time_anquanke
-        return [response_anquanke,response_4hou,last_seconds]
+            """
+        last_seconds = time_4hou + time_anquanke + time_freebuf
+        return [response_anquanke,response_4hou,response_freebuf,last_seconds]
 
 
 
@@ -297,6 +375,7 @@ class get_elasticsearch_data_count(object):
         self.counts = []
         self.index.append("article_anquanke")
         self.index.append("teachnical_4hou")
+        self.index.append("teachnical_freebuf")
 
         for index in self.index:
             count = self.__get_datecount(index)

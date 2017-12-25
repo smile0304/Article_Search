@@ -1,6 +1,6 @@
 from flask import Flask,render_template,request
 from config import client
-from moudels import Article_4houType,Article_anquankeType
+from moudels import Article_4houType,Article_anquankeType,Article_freebuf
 from common import elasticsearch_search,elasticsearch_allsearch,get_elasticsearch_data_count
 import json
 from datetime import datetime
@@ -21,6 +21,9 @@ def suggest():
     elif "anquanke" == type:
         fuzzing = elasticsearch_search(type=Article_anquankeType)
         re_dates = fuzzing.return_fuzzing_search(key_words=key_words)
+    elif "freebuf" == type:
+        fuzzing = elasticsearch_search(type=Article_freebuf)
+        re_dates = fuzzing.return_fuzzing_search(key_words=key_words)
     else:
         fuzzing = elasticsearch_allsearch()
         re_dates = fuzzing.return_fuzzing_search(key_words=key_words)
@@ -29,7 +32,7 @@ def suggest():
 @app.route('/search/')
 def search():
     #文章来源
-    all_options = [["all","全部"],["A4hou","嘶吼"],["anquanke","安全客"]] #不明白为什么用字典会乱序
+    all_options = [["all","全部"],["A4hou","嘶吼"],["anquanke","安全客"],["freebuf","freebuf"]] #不明白为什么用字典会乱序
     key_words = request.args.get('q','')
     types = request.args.get('s_type','')
     page = request.args.get('p','1')
@@ -47,16 +50,20 @@ def search():
         response, last_seconds = search_obj.get_date(key_words=key_words, page=page)
         total_nums = response["hits"]["total"]
         all_hits = search_obj.analyze_date(key_words, response)
+    elif "freebuf" == types:
+        search_obj = elasticsearch_search(type=Article_freebuf)
+        response, last_seconds = search_obj.get_date(key_words=key_words, page=page)
+        total_nums = response["hits"]["total"]
+        all_hits = search_obj.analyze_date(key_words, response)
     elif "all" == types:
-
         search_obj = elasticsearch_allsearch()
         all_hits,last_seconds,total_nums = search_obj.return_datenum(key_words,page)
     x = get_elasticsearch_data_count()
     alldate_nums = x.return_count()
-    if (page%10) > 0:
-        page_nums = int(total_nums/10)+1
+    if (page%12) > 0:
+        page_nums = int(total_nums/12)+1
     else:
-        page_nums = int(total_nums/10)
+        page_nums = int(total_nums/12)
 
 
 
@@ -73,4 +80,4 @@ def search():
                            )
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0",debug=True,port=8080)
+    app.run(host="127.0.0.1",debug=True,port=8080)
